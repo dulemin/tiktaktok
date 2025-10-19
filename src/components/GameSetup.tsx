@@ -11,7 +11,7 @@ export default function GameSetup({ onStartGame }: GameSetupProps) {
   const [matchMode, setMatchMode] = useState<MatchMode>('single');
   const [gameMode, setGameMode] = useState<GameMode>('pvp');
   const [aiDifficulty, setAIDifficulty] = useState<AIDifficulty>('medium');
-  const [playerCoinChoice, setPlayerCoinChoice] = useState<CoinSide>('heads');
+  const playerCoinChoice: CoinSide = 'heads';
   const [player1Name, setPlayer1Name] = useState('Spieler 1');
   const [player2Name, setPlayer2Name] = useState('Spieler 2');
 

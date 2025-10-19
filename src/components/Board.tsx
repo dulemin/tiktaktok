@@ -153,7 +153,7 @@ export default function Board({ boardSize, winCondition, player1Name, player2Nam
         const remainingDelay = Math.max(0, 2000 - elapsed);
 
         const timer = setTimeout(() => {
-          const nextSquares = squares.slice();
+          const nextSquares: BoardState = squares.slice();
           nextSquares[aiMove] = 'O';
           setSquares(nextSquares);
           setXIsNext(true);
@@ -198,7 +198,7 @@ export default function Board({ boardSize, winCondition, player1Name, player2Nam
         const remainingDelay = Math.max(0, 2000 - elapsed);
 
         const aiMoveTimer = setTimeout(() => {
-          const nextSquares = squares.slice();
+          const nextSquares: BoardState = squares.slice();
           nextSquares[aiMove] = 'O';
           setSquares(nextSquares);
           setXIsNext(true);
@@ -219,7 +219,7 @@ export default function Board({ boardSize, winCondition, player1Name, player2Nam
     }
 
     const currentPlayer = xIsNext ? 'X' : 'O';
-    const nextSquares = squares.slice();
+    const nextSquares: BoardState = squares.slice();
     nextSquares[i] = currentPlayer;
     setSquares(nextSquares);
     setXIsNext(!xIsNext);

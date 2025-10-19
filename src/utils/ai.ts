@@ -122,11 +122,6 @@ function getHardMove(
   // Für größere Boards: stark begrenzte Tiefe für Performance
   const maxDepth = boardSize === 3 ? 9 : boardSize === 5 ? 3 : 2;
 
-  interface MoveScore {
-    index: number;
-    score: number;
-  }
-
   function minimax(
     board: BoardState,
     depth: number,
@@ -173,7 +168,6 @@ function getHardMove(
   let movesToCheck = emptySquares;
   if (emptySquares.length > 15) {
     // Bei vielen freien Feldern: nur zentrale und strategische Züge prüfen
-    const center = Math.floor((boardSize * boardSize) / 2);
     const strategic = emptySquares.filter(spot => {
       const row = Math.floor(spot / boardSize);
       const col = spot % boardSize;
