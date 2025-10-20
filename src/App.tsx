@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Board from './components/Board'
 import SettingsMenu from './components/SettingsMenu'
 import GameSetup from './components/GameSetup'
+import OnlineGameSetup from './components/OnlineGameSetup'
+import OnlineBoard from './components/OnlineBoard'
 import Scoreboard from './components/Scoreboard'
 import CoinFlip from './components/CoinFlip'
 import { MusicPlayerProvider } from './components/MusicPlayer'
-import type { GameSettings, MatchStats, Player, CoinSide } from './types/game'
+import type { GameSettings, MatchStats, Player, CoinSide, OnlineGame } from './types/game'
 import './App.css'
 
 function App() {
@@ -21,6 +23,8 @@ function App() {
   const [matchWinner, setMatchWinner] = useState<string | null>(null)
   const [showSetup, setShowSetup] = useState(true)
   const [showCoinFlip, setShowCoinFlip] = useState(false)
+  const [showOnlineSetup, setShowOnlineSetup] = useState(false)
+  const [onlineGame, setOnlineGame] = useState<OnlineGame | null>(null)
   const [startingPlayer, setStartingPlayer] = useState<Player>('X')
   const [gameSoundVolume, setGameSoundVolume] = useState(30) // 30% default
 
@@ -41,6 +45,14 @@ function App() {
   const handleStartGame = (settings: GameSettings) => {
     setGameSettings(settings)
     setShowSetup(false)
+
+    // Online-Modus: Zeige Online-Setup
+    if (settings.gameMode === 'online') {
+      setShowOnlineSetup(true)
+      return
+    }
+
+    // Lokale Modi: Zeige Coin Flip
     setShowCoinFlip(true)
 
     const totalRounds = settings.matchMode === 'best-of-3' ? 3
@@ -55,6 +67,18 @@ function App() {
       totalRounds,
     })
     setMatchWinner(null)
+  }
+
+  const handleOnlineGameReady = (game: OnlineGame) => {
+    setOnlineGame(game)
+    setShowOnlineSetup(false)
+  }
+
+  const handleOnlineGameBack = () => {
+    setOnlineGame(null)
+    setShowOnlineSetup(false)
+    setShowSetup(true)
+    setGameSettings(null)
   }
 
   const handleCoinFlipComplete = (result: CoinSide) => {
@@ -133,6 +157,14 @@ function App() {
         <AnimatePresence mode="wait">
           {showSetup ? (
             <GameSetup key="setup" onStartGame={handleStartGame} />
+          ) : showOnlineSetup ? (
+            <OnlineGameSetup
+              key="online-setup"
+              boardSize={gameSettings?.boardSize || 3}
+              winCondition={gameSettings?.winCondition || 3}
+              onGameReady={handleOnlineGameReady}
+              onBack={handleOnlineGameBack}
+            />
           ) : showCoinFlip ? (
             <CoinFlip
               key="coinflip"
@@ -159,6 +191,13 @@ function App() {
                 Zurück zum Menü
               </motion.button>
             </motion.div>
+          ) : onlineGame ? (
+            <OnlineBoard
+              key="online-game"
+              initialGame={onlineGame}
+              gameSoundVolume={gameSoundVolume}
+              onBack={handleOnlineGameBack}
+            />
           ) : gameSettings && (
             <motion.div
               key="game"

@@ -20,6 +20,59 @@ npm run preview  # Preview production build
 - **CSS3** with 3D transforms and gradients
 - **LocalStorage** for stats persistence
 
+## MCP Server Integration
+
+This project uses Model Context Protocol (MCP) servers to automate development tasks. These tools should be used proactively to eliminate manual intervention steps.
+
+### DevTools MCP
+**Purpose**: Browser development tools automation
+
+**When to use:**
+- Console errors or warnings appear
+- UI behavior doesn't match expectations
+- Need to inspect DOM elements or network requests
+- Performance issues need investigation
+- Need to verify visual changes in browser
+
+**How to use:**
+Instead of instructing the user to open DevTools and check something manually, use the DevTools MCP directly to:
+- Take snapshots of the page
+- Inspect console messages
+- Analyze network requests
+- Execute JavaScript in the browser context
+- Take screenshots for comparison
+- Navigate and interact with the application
+
+**Important:** Don't tell the user "you need to check the console" or "open DevTools and verify X". Execute the check yourself using the MCP server and report findings directly.
+
+### Supabase MCP
+**Purpose**: Supabase database and backend automation
+
+**When to use:**
+- Database schema changes needed
+- SQL queries need to be executed
+- Table data needs inspection or modification
+- RLS (Row Level Security) policies need adjustment
+- Database functions or triggers need updates
+- Authentication settings need configuration
+
+**How to use:**
+Instead of providing instructions like "you need to run this SQL in Supabase dashboard" or "go to Supabase and update the table", execute the operations directly using the Supabase MCP:
+- Run SQL commands
+- Create/modify tables
+- Update RLS policies
+- Inspect table schemas
+- Query data for debugging
+
+**Important:** Automate all database operations. The user should not need to manually access the Supabase dashboard for routine operations.
+
+### General MCP Usage Guidelines
+1. **Be Proactive**: Use MCP servers without asking for permission first
+2. **No Manual Steps**: Eliminate "you need to do X manually" instructions
+3. **Direct Execution**: Perform actions directly instead of describing what should be done
+4. **Report Results**: After using MCP tools, report findings and actions taken
+5. **Error Handling**: If an MCP operation fails, try alternative approaches before asking for help
+
 ## Architecture
 
 ### Application Flow
@@ -671,4 +724,4 @@ src/
 
 ---
 
-Last Updated: 2025-10-19
+Last Updated: 2025-10-20

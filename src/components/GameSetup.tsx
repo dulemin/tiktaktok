@@ -45,6 +45,7 @@ export default function GameSetup({ onStartGame }: GameSetupProps) {
   const gameModes: { mode: GameMode; label: string; desc: string }[] = [
     { mode: 'pvp', label: 'Spieler vs Spieler', desc: 'Lokales Multiplayer' },
     { mode: 'ai', label: 'Spieler vs KI', desc: 'Gegen den Computer' },
+    { mode: 'online', label: '🌐 Online Multiplayer', desc: 'Spiel mit jemandem online' },
   ];
 
   const difficulties: { difficulty: AIDifficulty; label: string; desc: string }[] = [
