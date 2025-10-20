@@ -8,6 +8,10 @@ import OnlineBoard from './components/OnlineBoard'
 import Scoreboard from './components/Scoreboard'
 import CoinFlip from './components/CoinFlip'
 import { MusicPlayerProvider } from './components/MusicPlayer'
+import { AuthProvider } from './contexts/AuthContext'
+import UserMenu from './components/navigation/UserMenu'
+import AuthModal from './components/auth/AuthModal'
+import ProfilePage from './components/profile/ProfilePage'
 import type { GameSettings, MatchStats, Player, CoinSide, OnlineGame } from './types/game'
 import './App.css'
 
@@ -27,6 +31,8 @@ function App() {
   const [onlineGame, setOnlineGame] = useState<OnlineGame | null>(null)
   const [startingPlayer, setStartingPlayer] = useState<Player>('X')
   const [gameSoundVolume, setGameSoundVolume] = useState(30) // 30% default
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
 
   useEffect(() => {
     const savedStats = localStorage.getItem('ticTacToeStats')
@@ -136,26 +142,62 @@ function App() {
     setShowSetup(true)
     setGameSettings(null)
     setMatchWinner(null)
+    setShowProfile(false)
+  }
+
+  const handleProfileClick = () => {
+    setShowProfile(true)
+    setShowSetup(false)
+    setGameSettings(null)
+  }
+
+  const handleProfileBack = () => {
+    setShowProfile(false)
+    setShowSetup(true)
   }
 
   return (
-    <MusicPlayerProvider>
-      <div className="app">
-        <SettingsMenu
-          gameSoundVolume={gameSoundVolume}
-          onGameSoundVolumeChange={setGameSoundVolume}
-        />
+    <AuthProvider>
+      <MusicPlayerProvider>
+        <div className="app">
+          <UserMenu
+            onLogin={() => setShowAuthModal(true)}
+            onProfileClick={handleProfileClick}
+          />
 
-        <motion.h1
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          Tic Tac Toe
-        </motion.h1>
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+          />
+
+          <SettingsMenu
+            gameSoundVolume={gameSoundVolume}
+            onGameSoundVolumeChange={setGameSoundVolume}
+          />
+
+          <motion.h1
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            Tic Tac Toe
+          </motion.h1>
 
         <AnimatePresence mode="wait">
-          {showSetup ? (
+          {showProfile ? (
+            <div key="profile">
+              <ProfilePage />
+              <motion.button
+                className="back-button"
+                onClick={handleProfileBack}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                style={{ marginTop: '20px' }}
+              >
+                ← Zurück zum Menü
+              </motion.button>
+            </div>
+          ) : showSetup ? (
             <GameSetup key="setup" onStartGame={handleStartGame} />
           ) : showOnlineSetup ? (
             <OnlineGameSetup
@@ -222,6 +264,7 @@ function App() {
                 aiDifficulty={gameSettings.aiDifficulty}
                 startingPlayer={startingPlayer}
                 gameSoundVolume={gameSoundVolume}
+                matchMode={gameSettings.matchMode}
                 onRoundEnd={handleRoundEnd}
               />
 
@@ -238,6 +281,7 @@ function App() {
         </AnimatePresence>
       </div>
     </MusicPlayerProvider>
+  </AuthProvider>
   )
 }
 

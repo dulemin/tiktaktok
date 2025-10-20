@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Square from './Square';
 import Confetti from './Confetti';
 import WinLine from './WinLine';
-import type { Player, BoardState, WinResult, BoardSize, GameMode, AIDifficulty } from '../types/game';
+import type { Player, BoardState, WinResult, BoardSize, GameMode, AIDifficulty, MatchMode } from '../types/game';
 import { getAIMove } from '../utils/ai';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 function calculateWinner(squares: BoardState, boardSize: BoardSize, winCondition: number): WinResult {
   const size = boardSize;
@@ -65,16 +67,19 @@ interface BoardProps {
   aiDifficulty?: AIDifficulty;
   startingPlayer?: Player;
   gameSoundVolume?: number;
+  matchMode?: MatchMode;
   onRoundEnd?: (winner: Player | null) => void;
 }
 
-export default function Board({ boardSize, winCondition, player1Name, player2Name, gameMode, aiDifficulty, startingPlayer = 'X', gameSoundVolume = 30, onRoundEnd }: BoardProps) {
+export default function Board({ boardSize, winCondition, player1Name, player2Name, gameMode, aiDifficulty, startingPlayer = 'X', gameSoundVolume = 30, matchMode = 'single', onRoundEnd }: BoardProps) {
   const totalSquares = boardSize * boardSize;
   const [squares, setSquares] = useState<BoardState>(Array(totalSquares).fill(null));
   const [xIsNext, setXIsNext] = useState(startingPlayer === 'X');
   const [isAIThinking, setIsAIThinking] = useState(false);
   const roundEndCalledRef = useRef(false);
   const aiStartedRef = useRef(false);
+  const matchStartTimeRef = useRef<number>(Date.now());
+  const { user } = useAuth();
 
   // Sound Refs für Spielzüge
   const soundXRef = useRef<HTMLAudioElement>(null);
@@ -109,9 +114,97 @@ export default function Board({ boardSize, winCondition, player1Name, player2Nam
     }
   };
 
+  // Track match to Supabase when user is logged in
+  const trackMatchToSupabase = async (matchWinner: Player | null) => {
+    if (!user) return;
+
+    try {
+      const durationSeconds = Math.floor((Date.now() - matchStartTimeRef.current) / 1000);
+      const playerSymbol = startingPlayer;
+
+      // Determine result from player's perspective (X is always the logged-in player)
+      let result: 'win' | 'loss' | 'draw';
+      if (!matchWinner) {
+        result = 'draw';
+      } else if (matchWinner === 'X') {
+        result = 'win';
+      } else {
+        result = 'loss';
+      }
+
+      // Insert match history
+      const { error: historyError } = await supabase.from('match_history').insert({
+        user_id: user.id,
+        opponent_type: gameMode === 'ai' ? 'ai' : 'pvp',
+        opponent_name: gameMode === 'ai' ? 'KI' : player2Name,
+        ai_difficulty: gameMode === 'ai' ? aiDifficulty : null,
+        board_size: boardSize,
+        win_condition: winCondition,
+        match_mode: matchMode,
+        result,
+        player_symbol: playerSymbol,
+        final_score_player: 1, // Single round
+        final_score_opponent: matchWinner === 'O' ? 1 : 0,
+        total_rounds: 1,
+        duration_seconds: durationSeconds,
+      });
+
+      if (historyError) {
+        console.error('Error inserting match history:', historyError);
+        return;
+      }
+
+      // Update user stats
+      const { data: currentStats } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (currentStats) {
+        const updates: Record<string, number> = {
+          games_played: currentStats.games_played + 1,
+        };
+
+        if (result === 'win') {
+          updates.total_wins = currentStats.total_wins + 1;
+          if (gameMode === 'ai') {
+            updates.ai_wins = currentStats.ai_wins + 1;
+          } else {
+            updates.pvp_wins = currentStats.pvp_wins + 1;
+          }
+        } else if (result === 'loss') {
+          updates.total_losses = currentStats.total_losses + 1;
+          if (gameMode === 'ai') {
+            updates.ai_losses = currentStats.ai_losses + 1;
+          } else {
+            updates.pvp_losses = currentStats.pvp_losses + 1;
+          }
+        } else {
+          updates.total_draws = currentStats.total_draws + 1;
+        }
+
+        const { error: statsError } = await supabase
+          .from('user_stats')
+          .update(updates)
+          .eq('user_id', user.id);
+
+        if (statsError) {
+          console.error('Error updating stats:', statsError);
+        }
+      }
+    } catch (error) {
+      console.error('Error tracking match:', error);
+    }
+  };
+
   useEffect(() => {
     if ((winner || isDraw) && !roundEndCalledRef.current) {
       roundEndCalledRef.current = true;
+
+      // Track to Supabase if user is logged in
+      trackMatchToSupabase(winner);
+
       setTimeout(() => {
         onRoundEnd?.(winner);
       }, 2000);
@@ -232,6 +325,7 @@ export default function Board({ boardSize, winCondition, player1Name, player2Nam
     setIsAIThinking(false);
     roundEndCalledRef.current = false;
     aiStartedRef.current = false;
+    matchStartTimeRef.current = Date.now(); // Reset match start time
   }
 
   let status;
