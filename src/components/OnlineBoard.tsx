@@ -4,6 +4,8 @@ import Square from './Square';
 import Confetti from './Confetti';
 import WinLine from './WinLine';
 import { subscribeToGame, makeMove, finishGame, getCurrentPlayerId } from '../lib/gameService';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import type { Player, BoardState, WinResult, OnlineGame } from '../types/game';
 
 function calculateWinner(squares: BoardState, boardSize: number, winCondition: number): WinResult {
@@ -63,12 +65,14 @@ interface OnlineBoardProps {
 }
 
 export default function OnlineBoard({ initialGame, gameSoundVolume = 30, onBack }: OnlineBoardProps) {
+  const { user } = useAuth();
   const [game, setGame] = useState<OnlineGame>(initialGame);
   const [waitingForPlayer, setWaitingForPlayer] = useState(initialGame.status === 'waiting');
 
   const soundXRef = useRef<HTMLAudioElement>(null);
   const soundORef = useRef<HTMLAudioElement>(null);
   const gameFinishedRef = useRef(false);
+  const matchStartTimeRef = useRef(Date.now());
 
   const playerId = getCurrentPlayerId();
   const isPlayer1 = game.player1_id === playerId;
@@ -103,6 +107,79 @@ export default function OnlineBoard({ initialGame, gameSoundVolume = 30, onBack 
     }
   };
 
+  // Track match to Supabase when user is logged in
+  const trackMatchToSupabase = async (matchWinner: Player | null) => {
+    if (!user) return;
+
+    try {
+      const durationSeconds = Math.floor((Date.now() - matchStartTimeRef.current) / 1000);
+
+      // Determine result from player's perspective
+      let result: 'win' | 'loss' | 'draw';
+      if (!matchWinner) {
+        result = 'draw';
+      } else if (matchWinner === mySymbol) {
+        result = 'win';
+      } else {
+        result = 'loss';
+      }
+
+      // Insert match history
+      const { error: historyError } = await supabase.from('match_history').insert({
+        user_id: user.id,
+        opponent_type: 'pvp',
+        opponent_name: opponentName || 'Unbekannt',
+        ai_difficulty: null,
+        board_size: game.board_size,
+        win_condition: game.win_condition,
+        match_mode: 'single',
+        result,
+        player_symbol: mySymbol,
+        final_score_player: matchWinner === mySymbol ? 1 : 0,
+        final_score_opponent: matchWinner && matchWinner !== mySymbol ? 1 : 0,
+        total_rounds: 1,
+        duration_seconds: durationSeconds,
+      });
+
+      if (historyError) {
+        console.error('Error saving match history:', historyError);
+        return;
+      }
+
+      // Update user stats
+      const { data: currentStats, error: fetchError } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError || !currentStats) {
+        console.error('Error fetching user stats:', fetchError);
+        return;
+      }
+
+      const statsUpdate = {
+        games_played: (currentStats.games_played ?? 0) + 1,
+        total_wins: result === 'win' ? (currentStats.total_wins ?? 0) + 1 : currentStats.total_wins,
+        total_losses: result === 'loss' ? (currentStats.total_losses ?? 0) + 1 : currentStats.total_losses,
+        total_draws: result === 'draw' ? (currentStats.total_draws ?? 0) + 1 : currentStats.total_draws,
+        pvp_wins: result === 'win' ? (currentStats.pvp_wins ?? 0) + 1 : currentStats.pvp_wins,
+        pvp_losses: result === 'loss' ? (currentStats.pvp_losses ?? 0) + 1 : currentStats.pvp_losses,
+      };
+
+      const { error: updateError } = await supabase
+        .from('user_stats')
+        .update(statsUpdate)
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating user stats:', updateError);
+      }
+    } catch (error) {
+      console.error('Error tracking match to Supabase:', error);
+    }
+  };
+
   // Subscribe to realtime updates
   useEffect(() => {
     const unsubscribe = subscribeToGame(game.id, (updatedGame) => {
@@ -125,6 +202,10 @@ export default function OnlineBoard({ initialGame, gameSoundVolume = 30, onBack 
   useEffect(() => {
     if ((winner || isDraw) && !gameFinishedRef.current && game.status === 'playing') {
       gameFinishedRef.current = true;
+
+      // Track match to Supabase if user is logged in
+      trackMatchToSupabase(winner);
+
       setTimeout(() => {
         finishGame(game.id, winner);
       }, 1000);
