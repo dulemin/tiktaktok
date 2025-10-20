@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from './supabaseClient';
 import type { OnlineGame, CreateGameParams, JoinGameParams, BoardState, Player } from '../types/game';
 
 // Generiere einen 6-stelligen Game-Code
