@@ -93,6 +93,13 @@ const trackMatchToSupabase = async (matchWinner: Player | null) => {
 };
 ```
 
+**IMPORTANT: Null coalescing for stats** (prevents TypeScript build errors):
+```typescript
+games_played: (currentStats.games_played ?? 0) + 1,
+total_wins: (currentStats.total_wins ?? 0) + 1,
+// Use ?? 0 for ALL stat fields that might be null
+```
+
 ## File Structure
 ```
 src/
@@ -132,6 +139,28 @@ src/
 **All tables have RLS enabled** with policies for user-specific access.
 **Trigger:** `on_auth_user_created` fires `handle_new_user()` to auto-create profile + stats for email and OAuth signups.
 
+## Production Deployment (GitHub Pages)
+**GitHub Secrets required** (Settings → Secrets → Actions):
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+**Workflow uses secrets** in `.github/workflows/deploy.yml`:
+```yaml
+- name: Build
+  run: npm run build
+  env:
+    VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+    VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+```
+
+**Supabase Configuration** (Authentication → URL Configuration):
+- Site URL: `https://dulemin.github.io/tiktaktok/`
+- Redirect URLs: `https://dulemin.github.io/tiktaktok/**`
+
+**Google OAuth Configuration** (Google Cloud Console → Credentials):
+- Authorized JavaScript origins: `https://dulemin.github.io` (NO trailing slash, NO path)
+- Redirect URIs: `https://mgzzhlftixrxfjakvwua.supabase.co/auth/v1/callback`
+
 ## Common Issues
 | Issue | Cause | Solution |
 |-------|-------|----------|
@@ -142,6 +171,8 @@ src/
 | Win line not visible | Percentage strings in SVG | Use numeric values directly |
 | Profile not loading (OAuth) | Trigger doesn't create profile for OAuth users | Ensure `handle_new_user()` creates profile for ALL auth methods |
 | "Provider not enabled" error | Google OAuth not configured in Supabase | Add Google provider in Supabase Auth settings + OAuth credentials |
+| Gray screen on GitHub Pages | Supabase env vars missing in build | Add GitHub Secrets and update deploy.yml workflow |
+| TypeScript build errors (stats) | Stats fields possibly null | Use null coalescing `?? 0` for all stat calculations |
 
 ## Key Constants
 - Board sizes: 3x3 (3 to win), 5x5 (4 to win), 7x7 (5 to win)
