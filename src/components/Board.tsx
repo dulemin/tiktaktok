@@ -163,25 +163,25 @@ export default function Board({ boardSize, winCondition, player1Name, player2Nam
 
       if (currentStats) {
         const updates: Record<string, number> = {
-          games_played: currentStats.games_played + 1,
+          games_played: (currentStats.games_played ?? 0) + 1,
         };
 
         if (result === 'win') {
-          updates.total_wins = currentStats.total_wins + 1;
+          updates.total_wins = (currentStats.total_wins ?? 0) + 1;
           if (gameMode === 'ai') {
-            updates.ai_wins = currentStats.ai_wins + 1;
+            updates.ai_wins = (currentStats.ai_wins ?? 0) + 1;
           } else {
-            updates.pvp_wins = currentStats.pvp_wins + 1;
+            updates.pvp_wins = (currentStats.pvp_wins ?? 0) + 1;
           }
         } else if (result === 'loss') {
-          updates.total_losses = currentStats.total_losses + 1;
+          updates.total_losses = (currentStats.total_losses ?? 0) + 1;
           if (gameMode === 'ai') {
-            updates.ai_losses = currentStats.ai_losses + 1;
+            updates.ai_losses = (currentStats.ai_losses ?? 0) + 1;
           } else {
-            updates.pvp_losses = currentStats.pvp_losses + 1;
+            updates.pvp_losses = (currentStats.pvp_losses ?? 0) + 1;
           }
         } else {
-          updates.total_draws = currentStats.total_draws + 1;
+          updates.total_draws = (currentStats.total_draws ?? 0) + 1;
         }
 
         const { error: statsError } = await supabase

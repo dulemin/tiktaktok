@@ -71,8 +71,11 @@ export default function ProfilePage() {
     );
   }
 
-  const winRate = stats.games_played > 0
-    ? ((stats.total_wins / stats.games_played) * 100).toFixed(1)
+  const gamesPlayed = stats.games_played ?? 0;
+  const totalWins = stats.total_wins ?? 0;
+
+  const winRate = gamesPlayed > 0
+    ? ((totalWins / gamesPlayed) * 100).toFixed(1)
     : '0.0';
 
   return (
