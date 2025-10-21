@@ -15,8 +15,11 @@ AuthProvider (Supabase auth context)
   → MusicPlayerProvider (music context)
     → App (root + state) → GameSetup → CoinFlip → Board (game logic) → Square
                          → Scoreboard
-                         → SettingsMenu → MusicControls
-                         → UserMenu → AuthModal / ProfilePage
+                         → SettingsMenu → MusicControls (Desktop)
+                         → UserMenu → AuthModal / ProfilePage (Desktop)
+                         → HamburgerButton + Sidebar (Mobile)
+                            → SidebarUserSection
+                            → SidebarSettingsSection
 ```
 
 ## Critical Patterns
@@ -100,6 +103,24 @@ total_wins: (currentStats.total_wins ?? 0) + 1,
 // Use ?? 0 for ALL stat fields that might be null
 ```
 
+### 9. Responsive Navigation (Mobile Hamburger Menu)
+**Mobile-first sidebar navigation with hamburger menu:**
+- **Desktop (>768px)**: Traditional buttons shown via `.desktop-nav` wrapper
+- **Mobile (≤768px)**: Hamburger button visible, desktop nav hidden via CSS `@media`
+- **Sidebar components**: Separate `SidebarUserSection` and `SidebarSettingsSection` for clean separation
+- **Auto-close behavior**: Sidebar closes automatically on login/logout actions via `setIsSidebarOpen(false)`
+- **Animation**: Framer Motion slide-in from right with overlay backdrop
+```typescript
+// App.tsx pattern:
+const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+// Close sidebar after user actions:
+onLogin={() => {
+  setShowAuthModal(true);
+  setIsSidebarOpen(false);  // Auto-close
+}}
+```
+
 ## File Structure
 ```
 src/
@@ -118,7 +139,11 @@ src/
 │   │   ├── ProfilePage.tsx    # User stats & match history toggle
 │   │   └── MatchHistory.tsx   # Last 20 matches with filters
 │   ├── navigation/
-│   │   └── UserMenu.tsx       # User dropdown (profile, logout)
+│   │   ├── UserMenu.tsx               # Desktop user dropdown (profile, logout)
+│   │   ├── HamburgerButton.tsx        # Mobile hamburger menu icon
+│   │   ├── Sidebar.tsx                # Mobile slide-in sidebar container
+│   │   ├── SidebarUserSection.tsx     # Sidebar user account section
+│   │   └── SidebarSettingsSection.tsx # Sidebar settings section
 │   ├── Board.tsx          # Game logic, AI, match tracking to Supabase
 │   ├── Square.tsx         # Cell animations
 │   ├── GameSetup.tsx      # Config screen
