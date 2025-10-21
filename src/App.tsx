@@ -10,6 +10,10 @@ import CoinFlip from './components/CoinFlip'
 import { MusicPlayerProvider } from './components/MusicPlayer'
 import { AuthProvider } from './contexts/AuthContext'
 import UserMenu from './components/navigation/UserMenu'
+import { HamburgerButton } from './components/navigation/HamburgerButton'
+import { Sidebar } from './components/navigation/Sidebar'
+import { SidebarUserSection } from './components/navigation/SidebarUserSection'
+import { SidebarSettingsSection } from './components/navigation/SidebarSettingsSection'
 import AuthModal from './components/auth/AuthModal'
 import ProfilePage from './components/profile/ProfilePage'
 import type { GameSettings, MatchStats, Player, CoinSide, OnlineGame } from './types/game'
@@ -33,6 +37,7 @@ function App() {
   const [gameSoundVolume, setGameSoundVolume] = useState(30) // 30% default
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
     const savedStats = localStorage.getItem('ticTacToeStats')
@@ -149,6 +154,7 @@ function App() {
     setShowProfile(true)
     setShowSetup(false)
     setGameSettings(null)
+    setIsSidebarOpen(false)
   }
 
   const handleProfileBack = () => {
@@ -160,19 +166,46 @@ function App() {
     <AuthProvider>
       <MusicPlayerProvider>
         <div className="app">
-          <UserMenu
-            onLogin={() => setShowAuthModal(true)}
-            onProfileClick={handleProfileClick}
+          {/* Desktop Navigation */}
+          <div className="desktop-nav">
+            <UserMenu
+              onLogin={() => setShowAuthModal(true)}
+              onProfileClick={handleProfileClick}
+            />
+            <SettingsMenu
+              gameSoundVolume={gameSoundVolume}
+              onGameSoundVolumeChange={setGameSoundVolume}
+            />
+          </div>
+
+          {/* Mobile Navigation */}
+          <HamburgerButton
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            isOpen={isSidebarOpen}
           />
+
+          <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen}>
+            <div className="sidebar-section">
+              <SidebarUserSection
+                onLogin={() => {
+                  setShowAuthModal(true)
+                  setIsSidebarOpen(false)
+                }}
+                onProfileClick={handleProfileClick}
+                onLogout={() => setIsSidebarOpen(false)}
+              />
+            </div>
+            <div className="sidebar-section">
+              <SidebarSettingsSection
+                gameSoundVolume={gameSoundVolume}
+                onGameSoundVolumeChange={setGameSoundVolume}
+              />
+            </div>
+          </Sidebar>
 
           <AuthModal
             isOpen={showAuthModal}
             onClose={() => setShowAuthModal(false)}
-          />
-
-          <SettingsMenu
-            gameSoundVolume={gameSoundVolume}
-            onGameSoundVolumeChange={setGameSoundVolume}
           />
 
           <motion.h1

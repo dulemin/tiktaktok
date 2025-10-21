@@ -1407,3 +1407,16 @@
   }
 }
 
+/* Navigation Responsive Styles */
+.desktop-nav {
+  display: flex;
+  gap: 10px;
+}
+
+/* Hide desktop navigation on mobile */
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none;
+  }
+}
+
